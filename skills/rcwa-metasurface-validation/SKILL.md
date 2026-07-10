@@ -125,15 +125,26 @@ R, T = obj.RT_Solve(normalize=1)
 
 ### 基本用法
 ```matlab
-addpath('C:\Users\陆星\Desktop\reticolo-blazr\RETICOLO V7');
+addpath('C:\Users\陆星\Desktop\reticolo-blazr\RETICOLO V7\reticolo_allege');
 
-% 定义光栅
-n_layers = 4;
-n_harmonics = 27;
-lambda_min = 5.5; lambda_max = 6.5;
+% Xu 2024 In:CdO MIM
+LD = 5.8; D = [1, 1]; teta0 = 0; nh = 1; delta0 = 0;
+parm = res0; parm.sym.x = 0; parm.sym.y = 0; parm.sym.pol = 1;
+n_Si3N4 = sqrt(3.1329);
+n_incdo = sqrt(-11.46-1.25i);
 
-% 参考 exemple_general_2D.m 了解完整参数结构
-% RETICOLO 使用 reticolo 类驱动计算
+textures{1} = 1;              % 超衬底 air
+textures{2} = n_incdo;        % 衬底 In:CdO
+textures{3} = n_Si3N4;        % spacer
+textures{4} = {1, [0,0,0.15,0.15, n_incdo, 1]};  % patch层
+
+nn = [5, 5];
+[aa, nef] = res1(LD, D, textures, nn, ro, delta0, parm);
+profil = {[0, 0.1, 0.4, 0], [1, 4, 3, 2]};
+ef = res2(aa, profil);
+R = sum(ef.TEinc_top_reflected.efficiency);
+T = sum(ef.TEinc_top_transmitted.efficiency);
+A = 1 - R - T;
 ```
 
 ### 关键文件
@@ -194,6 +205,16 @@ COMSOL FEM 对比基准（0.0125*wl mesh）：
 
 4. **⚠ 已知限制：grcwa 不支持负介电常数（金属/等离子体）**
    Laurent Fourier factorization 在 ε 从正跳负时失效（R>1, T<0）。对 In:CdO (ε≈-11.5-1.25i)、Au、Ag 等金属材料不可用。换用 `rcwa`（edmundsj）或 RETICOLO。
+
+### rcwa (edmundsj 1.0.48)
+
+1. **`ur` 必须与 `er` 同尺寸传全网格**：`Crystal(er=er_grid, ur=ur_grid)` 中 `ur=1`（标量）会被
+   `reshapeLowDimensionalData(1)` 展开为 `(1,1,1)`，导致谐波索引越界 (`index -2 out of bounds`)。  
+   ✅ 正确用法：
+   ```python
+   ur_grid = np.ones((N, N), dtype=complex)
+   crystal = rcwa.Crystal([P,0], [0,P], er=eps_grid, ur=ur_grid)
+   ```
 
 ### RETICOLO
 
