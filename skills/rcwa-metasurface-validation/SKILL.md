@@ -106,6 +106,21 @@ R, T = obj.RT_Solve(normalize=1)
 5. **能量守恒检查**：`A = 1 - R - T` 必须满足 `0 <= A <= 1` 且 `R + T <= 1`。
    如果 `R + T > 1`，增大 `nG`。
 
+## grcwa vs rcwa vs RETICOLO 选择
+
+| 工具 | 安装 | 负ε材料 | 2D图案化 | 速度 | 推荐场景 |
+|------|------|---------|---------|------|---------|
+| **grcwa** | `pip install grcwa` | ❌ 不支持 | ✅ 支持 | 快 | 普通介质光栅 |
+| **rcwa** (edmundsj) | `pip install rcwa` | ⚠ 待验证 | ✅ 支持 | 中 | 金属/介质混合结构 |
+| **RETICOLO V7** | MATLAB addpath | ✅ 支持 (Li's因子化) | ✅ 支持 | 中 | 论文保真验证 |
+
+**测试结论**（2026-07-11）：grcwa 对 In:CdO 在 5.5-6.6um（ε_real ≈ -10 to -16）产生 R>1 和 T<0，因 Laurent 展开无法处理金属/介质界面。`rcwa` 的 TMM(1,1) 对均匀叠层（air/Si3N4/In:CdO）给出正确 R 和能量守恒，待验证 2D 图案化层。
+
+**推荐工作流**：
+1. 先用 rcwa 做 TMM(1,1) 验证均匀叠层反射率
+2. 再用 rcwa 的 2D RCWA 做图案化层，检查能量守恒
+3. 如 rcwa 仍失败，用 RETICOLO（MATLAB）论文保真
+
 ## RETICOLO V7 速查（MATLAB）
 
 ### 基本用法
@@ -176,6 +191,9 @@ COMSOL FEM 对比基准（0.0125*wl mesh）：
 
 3. **Q: 复介电常数怎么传？**
    A: `obj.Add_LayerUniform(thickness, complex(re, im))` 或直接 `obj.Add_LayerUniform(thickness, eps)` 其中 `eps` 是 Python `complex`。
+
+4. **⚠ 已知限制：grcwa 不支持负介电常数（金属/等离子体）**
+   Laurent Fourier factorization 在 ε 从正跳负时失效（R>1, T<0）。对 In:CdO (ε≈-11.5-1.25i)、Au、Ag 等金属材料不可用。换用 `rcwa`（edmundsj）或 RETICOLO。
 
 ### RETICOLO
 
