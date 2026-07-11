@@ -1,6 +1,6 @@
 ---
 name: rcwa-metasurface-validation
-description: RCWA (Rigorous Coupled-Wave Analysis) metasurface validation environment. Use when running grcwa (Python) or RETICOLO (MATLAB) for periodic metasurface scattering validation of COMSOL FEM results. Covers grcwa 0.1.2 API (Add_LayerUniform/Add_LayerGrid/GridLayer_geteps/RT_Solve), RETICOLO V7 addpath setup, Drude material definition, energy conservation checks, and FEM vs RCWA cross-validation workflow for Xu 2024 In:CdO MIM.
+description: RCWA metasurface validation guide. Use when running grcwa, edmundsj rcwa, or RETICOLO for periodic scattering; validating COMSOL FEM spectra; resolving competing resonance branches; or auditing RCWA geometry, polarization, convergence, and energy closure. Covers local environments/APIs, dispersive lossy materials, curved inclusions, common-baseline FEM/RCWA comparisons, progressive-order peak convergence, provenance-safe long runs, and visual mode-evidence handoff.
 ---
 
 # RCWA 操作指南（grcwa 0.1.2 + RETICOLO V7 + MATLAB R2025b）
@@ -223,3 +223,97 @@ COMSOL FEM 对比基准（0.0125*wl mesh）：
 
 2. **Q: 如何定义 material？**
    A: 参考 `exemple_general_2D.m` 和 `exemple_2D_pertes.m`（含损耗示例）。RETICOLO 用折射率 `n + i*k` 而非介电常数，注意 `eps = (n+ik)^2` 的转换。
+
+## Cross-project RETICOLO audit rules
+
+### Inclusion dimensions, curved shapes, and polarization
+
+- RETICOLO inclusion vectors use full x/y dimensions, not half-widths or semiaxes:
+  `[cx, cy, full_dx, full_dy, refractive_index, k]`.
+- `k=1` is a rectangle. Larger `k` approximates an ellipse/circle with thin
+  rectangles. Converge both `k` and Fourier order for curved high-Q structures.
+- Put multiple inclusions in one patterned texture as
+  `{background_index, inclusion_1, inclusion_2, ...}`. Swap full x/y dimensions for
+  a 90-degree ellipse; do not invent a rotation property.
+- At symmetry/normal incidence, solve `parm.sym.pol=1` and `-1` with separate
+  `res1`/`res2` calls. Never read an unsolved polarization from the other result.
+- At oblique incidence, match incidence plane, azimuth, and Bloch path; TE/TM names
+  alone do not establish equivalence with COMSOL.
+
+The Xu 2024 benchmark exposed the full-dimension trap: a 150 nm argument modeled the
+wrong patch; the correct full 300 nm patch converged to `5.930 um, A=0.940` at
+`nn=31`.
+
+### Cell and order selection
+
+- Prefer the smallest exact primitive/conventional cell. A doubled supercell folds
+  bands, costs memory, and makes angular branch selection harder.
+- For rectangular cells, equal x/y order counts do not give equal reciprocal-space
+  coverage. Scale and converge the two directions independently.
+- A bounded low-order spectrum can miss or shift a narrow resonance by many
+  linewidths. Energy conservation is necessary, not modal convergence.
+
+### Common-baseline contract for FEM/RCWA reconciliation
+
+Before interpreting a peak offset, create a machine-readable audit table containing:
+
+- source script/model path and SHA-256;
+- lattice vectors and exact cell choice;
+- full inclusion dimensions, centers, height, and curved-shape slices;
+- every layer thickness and top/bottom termination;
+- complex material values/expressions, units, wavelength convention, and passive sign;
+- physical polarization, incidence direction, azimuth, and Bloch path;
+- requested/evaluated wavelength, RCWA orders, and FEM mesh identity.
+
+If any nominal input differs, create a named common working baseline and restart the
+comparison. Do not explain a spectral difference before this gate passes.
+
+### Progressive branch-aware convergence
+
+1. Use low order only for geometry/sign/polarization smoke tests and approximate
+   branch locations.
+2. At the next order, evaluate a few wavelengths around every competing branch and
+   recenter the bracket at that order's own maximum.
+3. Run a narrow scan fine enough to bracket both sides and measure A and FWHM. Retain
+   all local maxima, not only the global one.
+4. Increase order progressively. Converge x/y orders and curved-shape slices
+   independently when applicable.
+5. Stop only when peak wavelength, A, and FWHM stabilize to declared tolerances.
+   `R+T+A=1` proves closure, not modal convergence.
+6. Compare FEM and RCWA at their own converged peaks on the common baseline. Treat a
+   fixed-wavelength amplitude comparison as a diagnostic only.
+
+Prefer a few bracket points at the next order over a broad high-order scan. Never jump
+to a very high order solely because a low-order scan lacks the FEM peak.
+
+### Provenance-safe RCWA outputs
+
+- Give every geometry/material/cell/polarization/order/slice configuration a stable
+  `config_id`; never mix configurations in one resumable CSV.
+- Append and flush one wavelength row at a time. Resume only valid rows matching the
+  current `config_id`; retry errors.
+- Record R/T/A, energy sum, order limits, slice count, cell choice, polarization,
+  material convention, solve time, status, validation, and error.
+- Mark scan-boundary maxima and failed energy/passivity rows explicitly. Exclude them
+  from accepted peak fits and overlays.
+- Never run broad high-order RETICOLO beside a large standalone COMSOL solve. Sequence
+  low-order smoke, progressive bracket points, narrow converged scan, then FEM overlay.
+
+### Physical locator benchmark, not final convergence
+
+For Sun 2024 nominal constant materials and finite Au, RETICOLO produced:
+
+- `nn=9`: `5.418 um`, `A=0.7118`, FWHM about `16.36 nm`, `Q~331`;
+- `nn=11`: `5.430 um`, `A=0.7153`, FWHM about `16.17 nm`, `Q~336`.
+
+The 12 nm order shift makes this a physical locator, not a final result. It supports
+the location/width of COMSOL's scattered-field candidate while rejecting its
+unphysical `A=1.717` as emissivity evidence.
+
+### Separate numerical export from visual classification
+
+Wavelength and R/T/A agreement do not prove the same mode. Export matched field
+components/slices and numerical component/on-off ratios where supported. A text-only
+agent may generate standardized arrays and PNGs but must hand them to Codex or another
+image-capable agent before claiming shared symmetry, localization, magnetic-dipole
+character, or publication-ready overlay quality.
