@@ -20,7 +20,7 @@ The single source of truth is `skills/rcwa-metasurface-validation/SKILL.md`. `CL
 - **RETICOLO V10/V7**: MATLAB setup, temporary-file safety, durable unattended launchers, and layer/grating/excitation definitions.
 - **Drude material**: precompute complex ε(ω) in Python, sign convention matching COMSOL's `exp(-i*omega*t)`.
 - **grcwa vs FEM cross-validation**: same structure → compare R/T/A spectra; mode classification by field localization.
-- **Energy conservation**: `A=1-R-T` must close; `nG` truncation must be converged.
+- **Balance evidence**: label `A=1-R-T` as derived residual balance, enforce passivity, and claim independent closure only when an independent loss quantity exists.
 
 ## Install
 
