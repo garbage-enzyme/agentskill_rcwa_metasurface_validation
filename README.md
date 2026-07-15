@@ -17,7 +17,7 @@ The single source of truth is `skills/rcwa-metasurface-validation/SKILL.md`. `CL
 ## What the skill covers
 
 - **grcwa 0.1.2 API**: `Add_LayerUniform`/`Add_LayerGrid`/`GridLayer_geteps`/`RT_Solve`, semn-infinite substrate convention, complex permittivity handling.
-- **RETICOLO V7**: addpath setup in MATLAB R2025b, layer/grating/excitation definitions, example 2D/1D files.
+- **RETICOLO V10/V7**: MATLAB setup, temporary-file safety, durable unattended launchers, and layer/grating/excitation definitions.
 - **Drude material**: precompute complex ε(ω) in Python, sign convention matching COMSOL's `exp(-i*omega*t)`.
 - **grcwa vs FEM cross-validation**: same structure → compare R/T/A spectra; mode classification by field localization.
 - **Energy conservation**: `A=1-R-T` must close; `nG` truncation must be converged.
@@ -54,7 +54,7 @@ Open `skills/rcwa-metasurface-validation/SKILL.md`.
 ## Prerequisites
 
 - Python: `pip install grcwa` (numpy, autograd)
-- MATLAB R2025b (or R2021a) for RETICOLO
+- MATLAB R2025b Update 5 (verified) or another locally validated MATLAB release for RETICOLO
 - COMSOL FEM results for cross-validation
 
 ## Repository layout

@@ -10,6 +10,6 @@ It is a focused instruction document (with YAML frontmatter) that teaches coding
 
 ## When to read it
 
-Read `skills/rcwa-metasurface-validation/SKILL.md` **before** running any RCWA validation task. The skill covers grcwa 0.1.2 API, RETICOLO V7 setup, Drude material convention, and FEM vs RCWA cross-validation workflow.
+Read `skills/rcwa-metasurface-validation/SKILL.md` **before** running any RCWA validation task. The skill covers grcwa 0.1.2, rcwa 1.0.48, RETICOLO V10/V7, durable unattended MATLAB runs, Drude material conventions, and FEM vs RCWA cross-validation.
 
 For the driving COMSOL agent skill, see https://github.com/garbage-enzyme/COMSOL_6_4_agentskill_for_metasurfaces

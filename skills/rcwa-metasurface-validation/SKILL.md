@@ -3,23 +3,26 @@ name: rcwa-metasurface-validation
 description: RCWA metasurface validation guide. Use when running grcwa, edmundsj rcwa, or RETICOLO for periodic scattering; validating COMSOL FEM spectra; resolving competing resonance branches; or auditing RCWA geometry, polarization, convergence, and energy closure. Covers local environments/APIs, dispersive lossy materials, curved inclusions, common-baseline FEM/RCWA comparisons, progressive-order peak convergence, provenance-safe long runs, and visual mode-evidence handoff.
 ---
 
-# RCWA 操作指南（grcwa 0.1.2 + RETICOLO V7 + MATLAB R2025b）
+# RCWA 操作指南（grcwa 0.1.2 + rcwa 1.0.48 + RETICOLO V10/V7）
 
-本指南教你用 `grcwa`（Python）和 `RETICOLO`（MATLAB）做 RCWA 计算，验证 COMSOL FEM 结果。所有环境路径均经实测（2026-07-11）。
+本指南教你用 `grcwa`、`rcwa`（Python）和 `RETICOLO`（MATLAB）做周期散射、
+长作业和 FEM/RCWA 交叉验证。先发现并记录当前主机的实际版本和路径；不要把下面
+的已验证 Windows 路径当成其他用户或主机的默认值。
 
 ## 环境速查（本机实测）
 
-### Python / grcwa
+### Python / grcwa / rcwa
 
 | 项目 | 值 |
 |------|-----|
 | conda env | `comsol-mcp`：`D:\condaenvs\comsol-mcp\python.exe` |
 | grcwa 版本 | 0.1.2（`pip install grcwa`） |
-| 依赖 | numpy, autograd 1.9.1 |
+| rcwa (edmundsj) | 1.0.48（`pip install rcwa`） |
+| 依赖 | numpy, autograd 1.9.1, scipy, matplotlib |
 | pip index | `https://pypi.tuna.tsinghua.edu.cn/simple`（清华镜像） |
 
 ```powershell
-& "D:\condaenvs\comsol-mcp\python.exe" -m pip install grcwa
+& "D:\condaenvs\comsol-mcp\python.exe" -m pip install grcwa rcwa
 ```
 
 验证：
@@ -31,17 +34,45 @@ description: RCWA metasurface validation guide. Use when running grcwa, edmundsj
 
 | 项目 | 值 |
 |------|-----|
-| MATLAB 版本 | R2025b Update 5：`D:\Program Files\MATLAB\R2025b\bin\matlab.exe` |
-| 旧版 | R2021a：`D:\Program Files\Polyspace\R2021a\bin\matlab.exe`（备选） |
-| RETICOLO 位置 | `C:\Users\陆星\Desktop\reticolo-blazr\RETICOLO V7`（含 ~200 个 .m 文件） |
-| 来源 | GitHub: `awojdyla/reticolo-blazr`（含 RETICOLO V7 by IOGS） |
+| MATLAB（2026-07-15 实测） | `25.2.0.3177638 (R2025b) Update 5`, `win64` |
+| MATLAB 路径 | `D:\Program Files\MATLAB\R2025b\bin\matlab.exe` |
+| 旧版备选 | R2021a：`D:\Program Files\Polyspace\R2021a\bin\matlab.exe` |
+| RETICOLO V10（当前生产） | `D:\RETICOLO V10\V10_2025\reticolo_allege_v10`（148 个 `.m`） |
+| RETICOLO V7（旧版） | `D:\reticolo_v7\reticolo_allege`（144 个 `.m`） |
+| V10 文档 | `D:\RETICOLO V10\V10_2025\Documentation RETICOLO 2025.pdf` |
+| V10 来源 | Zenodo `10.5281/zenodo.14631951`（RETICOLO 2025） |
 
-MATLAB 中使用 RETICOLO：
+本机生产路径：
 ```matlab
-addpath('C:\Users\陆星\Desktop\reticolo-blazr\RETICOLO V7');
+addpath('D:\RETICOLO V10\V10_2025\reticolo_allege_v10');
 ```
 
-注意：RETICOLO V7 的函数名以 `ret` 开头（如 `reticolo.m` 是入口类），大量辅助函数（`retcouche.m`、`retreseau.m` 等）。阅读 `exemple_general_2D.m` 了解完整 2D 用法。
+在其他主机上先用 `which res0 -all`、`which retio -all` 和 `version` 记录实际身份。
+本机已有 V7 项目脚本可在 V10 下沿用基本 `res0/res1/res2` 调用，但每个新安装仍要做
+一到三个已知点的兼容性门禁，不能仅凭目录名宣称兼容。
+
+## RETICOLO 临时文件和内存安全
+
+`retio(a,1)` 默认把超过 5000 个复数的变量写入当前目录下的 `retXXXX*.mat`。
+高阶二维 RCWA 可快速产生大量临时文件。长作业必须先把工作目录放在有足够空间的
+ASCII 路径，并显式选择以下策略之一：
+
+```matlab
+cd('D:\reticolo_scratch\job_name');
+
+% Memory-resident strategy. Use only after RAM admission for the intended order.
+[~, ~] = retio([], inf*1i);
+
+% Always execute on normal exit and through onCleanup on errors.
+retio;
+```
+
+- 内存足够且矩阵上界已知时，可用 `retio([], inf*1i)` 禁止临时矩阵写盘。
+- 内存不足时保留写盘，但把 `cd` 指向大容量 scratch，并在每个独立点完成、结果落盘
+  且不再需要 `aa/ef` 后调用 `retio` 清理本 session 临时文件。
+- 不要等整段扫描结束才清理，也不要把 scratch 放在中文用户名路径或系统盘。
+- 清理前必须先提取并持久化所需的 R/T/A 或场数据；`retio` 会同时清理内部缓存。
+- 记录所用策略、scratch 路径、可用 RAM/磁盘门槛和 RETICOLO 版本。
 
 ## grcwa 0.1.2 API 速查
 
@@ -112,7 +143,7 @@ R, T = obj.RT_Solve(normalize=1)
 |------|------|---------|---------|------|---------|
 | **grcwa** | `pip install grcwa` | ❌ 不支持 | ✅ 支持 | 快 | 普通介质光栅 |
 | **rcwa** (edmundsj) | `pip install rcwa` | ⚠ 待验证 | ✅ 支持 | 中 | 金属/介质混合结构 |
-| **RETICOLO V7** | MATLAB addpath | ✅ 支持 (Li's因子化) | ✅ 支持 | 中 | 论文保真验证 |
+| **RETICOLO V10/V7** | MATLAB addpath | ✅ 支持 (Li's因子化) | ✅ 支持 | 中 | 论文保真验证 |
 
 **测试结论**（2026-07-11）：grcwa 对 In:CdO 在 5.5-6.6um（ε_real ≈ -10 to -16）产生 R>1 和 T<0，因 Laurent 展开无法处理金属/介质界面。`rcwa` 的 TMM(1,1) 对均匀叠层（air/Si3N4/In:CdO）给出正确 R 和能量守恒，待验证 2D 图案化层。
 
@@ -121,22 +152,25 @@ R, T = obj.RT_Solve(normalize=1)
 2. 再用 rcwa 的 2D RCWA 做图案化层，检查能量守恒
 3. 如 rcwa 仍失败，用 RETICOLO（MATLAB）论文保真
 
-## RETICOLO V7 速查（MATLAB）
+## RETICOLO V10/V7 速查（MATLAB）
 
 ### 基本用法
 ```matlab
-addpath('C:\Users\陆星\Desktop\reticolo-blazr\RETICOLO V7\reticolo_allege');
+addpath('D:\RETICOLO V10\V10_2025\reticolo_allege_v10');
+[~, ~] = retio([], inf*1i);  % only after memory admission
 
 % Xu 2024 In:CdO MIM
 LD = 5.8; D = [1, 1]; teta0 = 0; nh = 1; delta0 = 0;
 parm = res0; parm.sym.x = 0; parm.sym.y = 0; parm.sym.pol = 1;
 n_Si3N4 = sqrt(3.1329);
-n_incdo = sqrt(-11.46-1.25i);
+eps_incdo_ret = -11.46+1.25i;
+n_incdo = sqrt(eps_incdo_ret);
+if imag(n_incdo) < 0; n_incdo = -n_incdo; end
 
 textures{1} = 1;              % 超衬底 air
 textures{2} = n_incdo;        % 衬底 In:CdO
 textures{3} = n_Si3N4;        % spacer
-textures{4} = {1, [0,0,0.15,0.15, n_incdo, 1]};  % patch层
+textures{4} = {1, [0,0,0.3,0.3, n_incdo, 1]};  % full patch dimensions
 
 nn = [5, 5];
 [aa, nef] = res1(LD, D, textures, nn, ro, delta0, parm);
@@ -145,6 +179,7 @@ ef = res2(aa, profil);
 R = sum(ef.TEinc_top_reflected.efficiency);
 T = sum(ef.TEinc_top_transmitted.efficiency);
 A = 1 - R - T;
+retio;
 ```
 
 ### 关键文件
@@ -218,8 +253,8 @@ COMSOL FEM 对比基准（0.0125*wl mesh）：
 
 ### RETICOLO
 
-1. **Q: 版本兼容性？**
-   A: RETICOLO V7 是 2018 左右的版本，在 R2021a 和 R2025b 上均可运行（纯 MATLAB 代码，无 MEX 依赖）。
+1. **Q: V10 还是 V7？**
+   A: 新作业优先使用实际发现并通过已知点门禁的 V10；保留 V7 只用于旧结果复核。
 
 2. **Q: 如何定义 material？**
    A: 参考 `exemple_general_2D.m` 和 `exemple_2D_pertes.m`（含损耗示例）。RETICOLO 用折射率 `n + i*k` 而非介电常数，注意 `eps = (n+ik)^2` 的转换。
@@ -289,15 +324,45 @@ to a very high order solely because a low-order scan lacks the FEM peak.
 ### Provenance-safe RCWA outputs
 
 - Give every geometry/material/cell/polarization/order/slice configuration a stable
-  `config_id`; never mix configurations in one resumable CSV.
-- Append and flush one wavelength row at a time. Resume only valid rows matching the
-  current `config_id`; retry errors.
+  `config_id` bound to the normalized configuration and source-script SHA-256; never
+  mix configurations in one resumable CSV.
+- Append, flush, and `fsync` one wavelength row at a time. Resume only `ok` rows whose
+  exact `config_id` matches; retry errors and partial rows.
 - Record R/T/A, energy sum, order limits, slice count, cell choice, polarization,
   material convention, solve time, status, validation, and error.
 - Mark scan-boundary maxima and failed energy/passivity rows explicitly. Exclude them
   from accepted peak fits and overlays.
 - Never run broad high-order RETICOLO beside a large standalone COMSOL solve. Sequence
   low-order smoke, progressive bracket points, narrow converged scan, then FEM overlay.
+
+### Durable unattended MATLAB/RETICOLO runs
+
+For jobs expected to run for hours:
+
+1. Expose mode, angles/parameters, orders, output label, resume flag, scratch path, and
+   wall limit through environment variables. Print the resolved configuration first.
+2. Add a zero-solve `validate` mode that checks executable/toolbox paths, hashes,
+   output headers, scratch writability, and the durable append primitive.
+3. Run MATLAB `checkcode` and the `validate` mode before creating or approving a launcher.
+4. Use a foreground PowerShell launcher that refuses MATLAB/COMSOL collisions, checks
+   RAM, remaining commit, and scratch free space, writes a transcript, and lets the
+   operator confirm before `matlab -batch "run('driver.m')"`.
+5. Enforce the wall limit only between durable point rows. A 12 h limit means stop before
+   starting the next point after 12 h; rerunning must resume exact completed identities.
+6. Use both a launcher lock and a MATLAB-side lock. Remove a stale lock only after a fresh
+   process inventory proves no owner exists.
+7. Keep `onCleanup` objects alive for RETICOLO cleanup, directory restoration, locks, and
+   Java file handles. MATLAB `R2025b Update 5` recognizes this lifetime use; obsolete
+   `%#ok<NASGU>` suppressions can themselves produce `MSNU` messages.
+8. For durable CSV append on Windows, `java.io.RandomAccessFile`, `getFD().sync()`, and
+   close provide an explicit flushed point boundary. Publish summaries through a temp
+   file plus atomic move.
+9. If absorption is defined as `A=1-R-T`, label `R+T+A` as derived residual closure, not
+   an independent absorption or power-closure measurement.
+
+This pattern was zero-solve validated on MATLAB
+`25.2.0.3177638 (R2025b) Update 5, win64`. It does not by itself validate any physics
+point; run a bounded smoke solve before approving a new geometry for unattended work.
 
 ### Physical locator benchmark, not final convergence
 

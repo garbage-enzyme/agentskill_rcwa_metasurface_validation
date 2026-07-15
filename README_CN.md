@@ -17,7 +17,7 @@
 ## Skill 涵盖内容
 
 - **grcwa 0.1.2 API**：`Add_LayerUniform`/`Add_LayerGrid`/`GridLayer_geteps`/`RT_Solve`，半无限衬底约定，复介电常数处理。
-- **RETICOLO V7**：MATLAB R2025b 中 addpath 配置，层/光栅/激励定义，2D/1D 示例文件。
+- **RETICOLO V10/V7**：MATLAB 配置、临时文件安全、耐久过夜 launcher，以及层/光栅/激励定义。
 - **Drude 材料**：Python 预计算复 ε(ω)，符号约定与 COMSOL 的 `exp(-i*omega*t)` 一致。
 - **grcwa vs FEM 交叉验证**：相同结构 → 对比 R/T/A 光谱；模式分类按场局域化。
 - **能量守恒**：`A=1-R-T` 必须闭合；`nG` 截断阶数必须收敛。
@@ -54,7 +54,7 @@ For RCWA validation, read /absolute/path/to/agentskill_rcwa_metasurface_validati
 ## 前提
 
 - Python：`pip install grcwa`（numpy, autograd）
-- MATLAB R2025b（或 R2021a）用于 RETICOLO
+- MATLAB R2025b Update 5（已验证），或其他经过本机门禁的 MATLAB 版本
 - 用于交叉验证的 COMSOL FEM 结果
 
 ## 仓库结构
