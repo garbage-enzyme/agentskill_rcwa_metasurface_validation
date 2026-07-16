@@ -4,13 +4,21 @@
 
 教 AI 编码助手如何用 **RCWA（严格耦合波分析）** 验证 COMSOL FEM 的周期性超表面模拟结果。支持 `grcwa`（Python）和 `RETICOLO`（MATLAB）。
 
-## 兼容工具：opencode、Claude Code、Codex（及任何读 AGENTS.md 的工具）
+## 兼容工具：opencode、Claude Code、Codex 和 Hermes Agent
 
 | 工具 | 入口文件 | 加载方式 |
 | --- | --- | --- |
 | **opencode** | `skills/rcwa-metasurface-validation/SKILL.md` | 从 `~/.config/opencode/skills/` 自动加载，任务匹配 frontmatter `description` 时触发 |
 | **Claude Code** | `CLAUDE.md`（项目根） | `CLAUDE.md` 内含 `@skills/rcwa-metasurface-validation/SKILL.md`，import 语法把完整 skill 注入上下文 |
 | **Codex CLI**（及任何读 AGENTS.md 的工具） | `AGENTS.md`（项目根） | `AGENTS.md` 被自动读取，指示 agent 在 RCWA 任务时打开 `skills/rcwa-metasurface-validation/SKILL.md` |
+| **Hermes Agent** | `skills/rcwa-metasurface-validation/SKILL.md` | 安装到 `~/.hermes/skills/`，或通过 `skills.external_dirs` 暴露仓库的 `skills/` 目录 |
+
+已依据 Hermes Agent 官方
+[Skills System 文档](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
+检查兼容性。本 skill 使用 Hermes 可扫描的 Agent Skills 结构：目录名与 frontmatter `name` 一致，包含必需的
+`description`，且 `SKILL.md` 自包含。Hermes 专属 metadata 是可选项，因此不需要
+维护 Hermes 专用分支。运行环境仍取决于主机：Hermes 选用的 terminal backend
+必须能访问所需 Python 或 MATLAB/RETICOLO 安装，以及待比较的 FEM 证据。
 
 唯一的内容源是 `skills/rcwa-metasurface-validation/SKILL.md`。`CLAUDE.md` 和 `AGENTS.md` 是薄指针，无内容重复。
 
@@ -50,6 +58,18 @@ For RCWA validation, read /absolute/path/to/agentskill_rcwa_metasurface_validati
 ### Option D — 直接阅读
 
 打开 `skills/rcwa-metasurface-validation/SKILL.md`。
+
+### Option E — Hermes Agent
+
+可直接从 GitHub 安装：
+
+```bash
+hermes skills install garbage-enzyme/agentskill_rcwa_metasurface_validation/skills/rcwa-metasurface-validation
+```
+
+也可以把完整 skill 目录复制到 `~/.hermes/skills/`，或在
+`~/.hermes/config.yaml` 的 `skills.external_dirs` 中加入本仓库的 `skills/`
+目录。
 
 ## 前提
 

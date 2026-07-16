@@ -4,13 +4,23 @@ English | [中文](README_CN.md)
 
 An agent skill that teaches AI coding assistants how to validate periodic metasurface COMSOL FEM results using **RCWA (Rigorous Coupled-Wave Analysis)** — specifically `grcwa` (Python) and `RETICOLO` (MATLAB).
 
-## Compatible with: opencode, Claude Code, Codex (and any AGENTS.md reader)
+## Compatible with: opencode, Claude Code, Codex, and Hermes Agent
 
 | Tool | Entry file it reads | How the skill loads |
 | --- | --- | --- |
 | **opencode** | `skills/rcwa-metasurface-validation/SKILL.md` | Auto-loaded from `~/.config/opencode/skills/` when the task matches the frontmatter `description` |
 | **Claude Code** | `CLAUDE.md` (project root) | `CLAUDE.md` contains `@skills/rcwa-metasurface-validation/SKILL.md`, an import that injects the full skill body into context |
 | **Codex CLI** / any AGENTS.md reader | `AGENTS.md` (project root) | `AGENTS.md` instructs the agent to open `skills/rcwa-metasurface-validation/SKILL.md` for RCWA tasks |
+| **Hermes Agent** | `skills/rcwa-metasurface-validation/SKILL.md` | Install under `~/.hermes/skills/` or expose the repository `skills/` directory through `skills.external_dirs` |
+
+Hermes Agent compatibility was checked against its official
+[Skills System documentation](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md).
+The skill uses the Agent Skills layout Hermes scans: a matching
+directory/frontmatter `name`, the required `description`, and a self-contained
+`SKILL.md`. Hermes-specific metadata is optional, so no Hermes-only fork is
+needed. Runtime compatibility remains host-dependent: the selected Hermes
+terminal backend must be able to reach the required Python or MATLAB/RETICOLO
+installation and any FEM evidence being compared.
 
 The single source of truth is `skills/rcwa-metasurface-validation/SKILL.md`. `CLAUDE.md` and `AGENTS.md` are thin pointers.
 
@@ -50,6 +60,18 @@ For RCWA validation, read /absolute/path/to/agentskill_rcwa_metasurface_validati
 ### Option D — read directly
 
 Open `skills/rcwa-metasurface-validation/SKILL.md`.
+
+### Option E — Hermes Agent
+
+Install directly from GitHub:
+
+```bash
+hermes skills install garbage-enzyme/agentskill_rcwa_metasurface_validation/skills/rcwa-metasurface-validation
+```
+
+You can instead copy the complete skill folder to `~/.hermes/skills/` or add the
+repository's `skills/` directory to `skills.external_dirs` in
+`~/.hermes/config.yaml`.
 
 ## Prerequisites
 
