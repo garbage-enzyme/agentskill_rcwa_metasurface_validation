@@ -318,6 +318,18 @@ comparison. Do not explain a spectral difference before this gate passes.
 6. Compare FEM and RCWA at their own converged peaks on the common baseline. Treat a
    fixed-wavelength amplitude comparison as a diagnostic only.
 
+A passive run with every requested row complete and every peak bracketed can
+still fail the declared order-convergence gate. Report execution completion and
+scientific acceptance separately. If peak wavelength, A, or FWHM remains outside
+the gate at the declared order cap, preserve a diagnostic or residual status and
+stop under reproduction scope unless the caller authorizes a larger convergence
+campaign.
+
+Before declaring that an angular branch disappears, run a bounded continuation
+beyond the original wavelength window. A boundary maximum or weak response in
+the old window proves only that the branch is unresolved there, not that it is
+absent.
+
 Prefer a few bracket points at the next order over a broad high-order scan. Never jump
 to a very high order solely because a low-order scan lacks the FEM peak.
 
@@ -332,6 +344,8 @@ to a very high order solely because a low-order scan lacks the FEM peak.
   material convention, solve time, status, validation, and error.
 - Mark scan-boundary maxima and failed energy/passivity rows explicitly. Exclude them
   from accepted peak fits and overlays.
+- Agreement between two RETICOLO versions at identical configuration points validates
+  backend compatibility for those points; it does not replace order convergence.
 - Never run broad high-order RETICOLO beside a large standalone COMSOL solve. Sequence
   low-order smoke, progressive bracket points, narrow converged scan, then FEM overlay.
 
