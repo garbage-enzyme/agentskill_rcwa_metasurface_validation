@@ -338,6 +338,10 @@ to a very high order solely because a low-order scan lacks the FEM peak.
 - Give every geometry/material/cell/polarization/order/slice configuration a stable
   `config_id` bound to the normalized configuration and source-script SHA-256; never
   mix configurations in one resumable CSV.
+- Treat console-only or report-only peak/order claims as unverifiable. A summary may
+  cite a configuration only when matching hash-bound raw rows exist for its exact
+  `config_id`; otherwise exclude or quarantine the claim rather than reconstructing
+  evidence from the summary.
 - Append, flush, and `fsync` one wavelength row at a time. Resume only `ok` rows whose
   exact `config_id` matches; retry errors and partial rows.
 - Record R/T/A, energy sum, order limits, slice count, cell choice, polarization,
